@@ -16,29 +16,38 @@ normalize_text() {
   -e 's/«/ /g' | tr 0-9 " "
 }
 
-mkdir word2vec
-cd word2vec
 
-wget http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2012.en.shuffled.gz
-wget http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2013.en.shuffled.gz
-gzip -d news.2012.en.shuffled.gz
-gzip -d news.2013.en.shuffled.gz
+if [ ! -s news.2012.en.shuffled ] ;  then
+    wget http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2012.en.shuffled.gz
+    gzip -d news.2012.en.shuffled.gz
+fi
 normalize_text < news.2012.en.shuffled > data.txt
+
+if [ ! -s news.2013.en.shuffled ] ;  then
+    wget http://www.statmt.org/wmt14/training-monolingual-news-crawl/news.2013.en.shuffled.gz
+    gzip -d news.2013.en.shuffled.gz
+fi
 normalize_text < news.2013.en.shuffled >> data.txt
 
-wget http://www.statmt.org/lm-benchmark/1-billion-word-language-modeling-benchmark-r13output.tar.gz
-tar -xvf 1-billion-word-language-modeling-benchmark-r13output.tar.gz
+
+if [ ! -s 1-billion-word-language-modeling-benchmark-r13output.tar.gz ] ; then 
+    wget http://www.statmt.org/lm-benchmark/1-billion-word-language-modeling-benchmark-r13output.tar.gz
+    tar -xvf 1-billion-word-language-modeling-benchmark-r13output.tar.gz
+fi
 for i in `ls 1-billion-word-language-modeling-benchmark-r13output/training-monolingual.tokenized.shuffled`; do
   normalize_text < 1-billion-word-language-modeling-benchmark-r13output/training-monolingual.tokenized.shuffled/$i >> data.txt
 done
 
 wget http://ebiquity.umbc.edu/redirect/to/resource/id/351/UMBC-webbase-corpus
-tar -zxvf umbc_webbase_corpus.tar.gz webbase_all/*.txt
+tar -zxvf UMBC-webbase-corpus webbase_all/*.txt
 for i in `ls webbase_all`; do
   normalize_text < webbase_all/$i >> data.txt
 done
 
-wget http://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2
+if [ ! -s enwiki-latest-pages-articles.xml.bz2 ] ; then 
+    wget http://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2
+fi
+
 bzip2 -c -d enwiki-latest-pages-articles.xml.bz2 | awk '{print tolower($0);}' | perl -e '
 # Program to filter Wikipedia XML dumps to "clean" text consisting only of lowercase
 # letters (a-z, converted from A-Z), and spaces (never consecutive)...
@@ -85,9 +94,9 @@ while (<>) {
 }
 ' | normalize_text | awk '{if (NF>1) print;}' >> data.txt
 
-wget http://word2vec.googlecode.com/svn/trunk/word2vec.c
-wget http://word2vec.googlecode.com/svn/trunk/word2phrase.c
-wget http://word2vec.googlecode.com/svn/trunk/compute-accuracy.c
+#wget http://word2vec.googlecode.com/svn/trunk/word2vec.c
+#wget http://word2vec.googlecode.com/svn/trunk/word2phrase.c
+#wget http://word2vec.googlecode.com/svn/trunk/compute-accuracy.c
 wget http://word2vec.googlecode.com/svn/trunk/questions-words.txt
 wget http://word2vec.googlecode.com/svn/trunk/questions-phrases.txt
 gcc word2vec.c -o word2vec -lm -pthread -O3 -march=native -funroll-loops
